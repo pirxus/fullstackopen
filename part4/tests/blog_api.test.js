@@ -3,6 +3,8 @@ const supertest = require('supertest')
 const app = require('../app')
 const api = supertest(app)
 const Blog = require('../models/blog')
+const User = require('../models/user')
+const bcrypt = require('bcrypt')
 const helper = require('./test_helper.js')
 
 const initialBlogs = require('./dummy_data').listWithMultipleBlogs.map(blog => {
@@ -11,15 +13,27 @@ const initialBlogs = require('./dummy_data').listWithMultipleBlogs.map(blog => {
   return blog
 })
 
-beforeEach(async () => {
-  await Blog.deleteMany({})
-  await Blog.insertMany(initialBlogs)
+const getAdminToken = async () => {
+  const loginResponse = await api
+    .post('/api/login')
+    .send({ username: 'root', password: 'password' })
+  return loginResponse.body.token
+}
 
-  /*
-  const blogObjects = initialBlogs.map(blog => new Blog(blog))
-  const promiseArray = blogObjects.map(blog => blog.save())
-  await Promise.all(promiseArray)
-  */
+
+beforeEach(async () => {
+  // create an admin user
+  await User.deleteMany({})
+  const passwordHash = await bcrypt.hash('password', 10)
+  const user = new User({ username: 'root', passwordHash })
+  await user.save()
+
+  // ensure that each blog has the admin linked via the user attribute
+  await Blog.deleteMany({})
+  await Blog.insertMany(initialBlogs.map(blog => {
+    blog.user = user.id
+    return blog
+  }))
 })
 
 describe('blog api basic tests', () => {
@@ -42,6 +56,31 @@ describe('blog api basic tests', () => {
   })
 
   test('test that post creates a new blog entry', async () => {
+
+    // first, login the user
+    const token = await getAdminToken()
+
+    const blog = {
+      title: 'Go To Statement Considered Harmful',
+      author: 'Edsger W. Dijkstra',
+      url: 'http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html',
+      likes: 5
+    }
+
+    await api
+      .post('/api/blogs')
+      .set('Authorization', 'Bearer ' + token)
+      .send(blog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const response = await api.get('/api/blogs')
+
+    expect(response.body).toHaveLength(initialBlogs.length + 1)
+  })
+
+  test('test that post fails with 401 without a token', async () => {
+
     const blog = {
       title: 'Go To Statement Considered Harmful',
       author: 'Edsger W. Dijkstra',
@@ -52,19 +91,16 @@ describe('blog api basic tests', () => {
     await api
       .post('/api/blogs')
       .send(blog)
-      .expect(201)
-      .expect('Content-Type', /application\/json/)
-
-    const response = await api.get('/api/blogs')
-
-    expect(response.body).toHaveLength(initialBlogs.length + 1)
+      .expect(401)
   })
-
 })
 
 describe('blog object properties', () => {
 
   test('test that post fills missing likes property with zero', async () => {
+    // first, login the user
+    const token = await getAdminToken()
+
     const newBlog = {
       title: "How to drink bleach",
       author: "Jon Doe",
@@ -73,6 +109,7 @@ describe('blog object properties', () => {
 
     const response = await api
       .post('/api/blogs')
+      .set('Authorization', 'Bearer ' + token)
       .send(newBlog)
       .expect(201)
 
@@ -80,6 +117,8 @@ describe('blog object properties', () => {
   })
 
   test('test that missing title returns bad request', async () => {
+    const token = await getAdminToken()
+
     const newBlog = {
       author: "Jon Doe",
       url: "asdfasdf"
@@ -87,11 +126,14 @@ describe('blog object properties', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', 'Bearer ' + token)
       .send(newBlog)
       .expect(400)
   })
 
   test('test that missing url returns bad request', async () => {
+    const token = await getAdminToken()
+
     const newBlog = {
       title: "Sick blog bro",
       author: "Jon Doe",
@@ -99,6 +141,7 @@ describe('blog object properties', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', 'Bearer ' + token)
       .send(newBlog)
       .expect(400)
   })
@@ -107,18 +150,30 @@ describe('blog object properties', () => {
 describe('deleting blogs', () => {
 
   test('deleting an existing blog', async () => {
+    // first, login the user
+    const token = await getAdminToken()
+
     const initialContents = await helper.blogsInDB()
     const toDelete = initialContents[0]
 
-    await api.delete(`/api/blogs/${toDelete.id}`).expect(204)
+    await api
+      .delete(`/api/blogs/${toDelete.id}`)
+      .set('Authorization', 'Bearer ' + token)
+      .expect(204)
 
     const blogsAfter = await helper.blogsInDB()
     expect(blogsAfter).toHaveLength(initialContents.length - 1)
   })
 
   test('deleting a non-existent blog', async () => {
+    // first, login the user
+    const token = await getAdminToken()
+
     const invalidId = await helper.nonExistingId()
-    await api.delete(`/api/blogs/${invalidId}`).expect(204)
+    await api
+      .delete(`/api/blogs/${invalidId}`)
+      .set('Authorization', 'Bearer ' + token)
+      .expect(204)
   })
 
 })
