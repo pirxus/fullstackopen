@@ -1,0 +1,32 @@
+.success {
+  color: green;
+  background: lightgrey;
+  font-size: 20px;
+  border-style: solid;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.error {
+  color: red;
+  background: lightgrey;
+  font-size: 20px;
+  border-style: solid;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.blog {
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 5px;
+  padding: 5px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+button {
+  margin: 1px;
+}
