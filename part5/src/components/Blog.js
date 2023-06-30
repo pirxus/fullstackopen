@@ -28,14 +28,14 @@ const Blog = ({ blog, user, likeHandler, deleteHandler }) => {
     return (
       <div>
         <p style={style}>
-          {blog.title} {blog.author} <button onClick={toggleShowDetail}>hide</button>
+          {blog.title} {blog.author} <button id="hide" onClick={toggleShowDetail}>hide</button>
         </p>
         <p style={style}>{blog.url}<br/></p>
-        <p style={style}>likes {blog.likes} <button onClick={likeClicked}>like</button></p>
+        <p style={style}>likes {blog.likes} <button id="like" onClick={likeClicked}>like</button></p>
         <p style={style}>{blog.user.name}</p>
         {
           user.username === blog.user.username &&
-            <p style={style}><button onClick={deleteBlog}>remove</button></p>
+            <p style={style}><button id="blog-delete-btn" onClick={deleteBlog}>remove</button></p>
         }
       </div>
     )
@@ -43,8 +43,8 @@ const Blog = ({ blog, user, likeHandler, deleteHandler }) => {
 
   const baseInfo = () => {
     return (
-      <div>
-        {blog.title} {blog.author} <button onClick={toggleShowDetail}>view</button>
+      <div className='blogPreview'>
+        {blog.title} {blog.author} <button id="blog-view-btn" onClick={toggleShowDetail}>view</button>
       </div>
     )
   }

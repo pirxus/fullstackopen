@@ -18,8 +18,14 @@ const App = () => {
 
   useEffect(() => {
     const fetchBlogs = async () => {
-      const blogs = await blogService.getAll()
-      setBlogs(blogs.toSorted((a, b) => b.likes - a.likes))
+      try {
+        const receivedBlogs = await blogService.getAll()
+        receivedBlogs.sort((a, b) => b.likes - a.likes)
+        setBlogs(receivedBlogs)
+
+      } catch(error) {
+        console.log(error)
+      }
     }
     fetchBlogs()
   }, [])
@@ -93,7 +99,7 @@ const App = () => {
       <div>
         <div>
           <h2>Blogs</h2>
-          <p>{user.name} logged in <button onClick={logoutUser}>logout</button></p>
+          <p>{user.name} logged in <button id='logout' onClick={logoutUser}>logout</button></p>
         </div>
         <div>
           <Togglable buttonLabel='create new blog' ref={blogFormRef}>

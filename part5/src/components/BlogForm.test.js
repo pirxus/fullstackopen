@@ -24,7 +24,7 @@ test('test that form has handler receives correct data after submitting', async 
   await user.type(titleInput, blog.title)
   await user.type(authorInput, blog.author)
   await user.type(urlInput, blog.url)
-  
+
   await user.click(submitButton)
 
   expect(createBlog.mock.calls).toHaveLength(1)
